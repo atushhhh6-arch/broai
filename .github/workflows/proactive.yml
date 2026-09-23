@@ -1,0 +1,22 @@
+name: Scheduled BRO check-ins
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  checkin:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request authorized check-ins
+        env:
+          URL: ${{ secrets.SUPABASE_URL }}
+          CRON_SECRET: ${{ secrets.PROACTIVE_CRON_SECRET }}
+        run: |
+          test -n "$URL" && test -n "$CRON_SECRET"
+          curl --fail --show-error --silent --retry 2 \
+            -X POST "$URL/functions/v1/proactive" \
+            -H "x-cron-secret: $CRON_SECRET" \
+            -H 'Content-Type: application/json' \
+            --data '{}'

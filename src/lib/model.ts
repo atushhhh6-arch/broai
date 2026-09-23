@@ -7,7 +7,7 @@ export interface Goal { id: string; title: string; done: boolean; created_at: st
 export interface Conversation { id: string; title: string; created_at: string }
 export interface ChatMessage { id: string; conversation_id: string; role: Role; content: string; source: MessageSource; created_at: string }
 export interface AppData { profile: Profile; settings: Settings; goals: Goal[]; conversations: Conversation[]; messages: ChatMessage[]; activeConversationId: string | null; lastLocalCheckin: string | null }
-export const defaultSettings: Settings = { proactive:true, notifications:true, frequency:'balanced', quietHours:true, quietStart:'23:00', quietEnd:'08:00', launchAtStartup:false };
+export const defaultSettings: Settings = { proactive:false, notifications:false, frequency:'balanced', quietHours:true, quietStart:'23:00', quietEnd:'08:00', launchAtStartup:false };
 export const emptyData: AppData = { profile:{name:'',occupation:'',about:'',timezone:Intl.DateTimeFormat().resolvedOptions().timeZone||'America/New_York',onboarded:false}, settings:defaultSettings, goals:[], conversations:[], messages:[], activeConversationId:null,lastLocalCheckin:null };
 const KEY='bro.desktop.data.v1';
 export function readData(): AppData { try { const d=JSON.parse(localStorage.getItem(KEY)||'{}') as Partial<AppData>; return {...emptyData,...d,profile:{...emptyData.profile,...d.profile},settings:{...defaultSettings,...d.settings},goals:Array.isArray(d.goals)?d.goals:[],conversations:Array.isArray(d.conversations)?d.conversations:[],messages:Array.isArray(d.messages)?d.messages:[]}; } catch {return emptyData;} }

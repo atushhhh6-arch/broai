@@ -19,7 +19,7 @@ npm install
 npm run dev
 ```
 
-The app opens with an animated blue splash, then onboarding. Without `.env`, it runs in local preview mode, including chats, editable goals, settings, tray integration, and on-device check-in/notification logic while the app is running.
+The icon files are generated from the original SVG artwork when the app starts or is packaged. The app opens with an animated blue splash, then onboarding. Without `.env`, it runs in local preview mode, including chats, editable goals, settings, tray integration, and on-device check-in/notification logic while the app is running.
 
 Run a production renderer/main build:
 
@@ -34,7 +34,7 @@ npm run pack:win    # Run on Windows
 npm run pack:mac    # Run on macOS
 ```
 
-Or use **GitHub → Actions → Build desktop installers → Run workflow** after pushing the project; each platform job uploads its installer under **Artifacts**. The build workflow runs Windows and macOS separately. These unsigned beta builds may trigger OS security warnings. Public distribution should use a Windows code-signing certificate and Apple Developer ID signing/notarization. Never distribute a build as verified/signed unless it actually is.
+Or use **GitHub → Actions → BRO desktop builds → Run workflow** after pushing the project; each platform job uploads its installer under **Artifacts**. The build workflow runs Windows and macOS separately. These unsigned beta builds may trigger OS security warnings. Public distribution should use a Windows code-signing certificate and Apple Developer ID signing/notarization. Never distribute a build as verified/signed unless it actually is.
 
 ## Turn on live AI (Supabase + OpenAI)
 
@@ -93,7 +93,7 @@ supabase/migrations/            Row-level security and check-in claim function
 supabase/functions/companion/   Authenticated AI chat and check-in requests
 supabase/functions/proactive/   Authorized scheduled proactive processing
 .github/workflows/             CI installers + scheduled check-ins
-build/                          Original PNG and ICO app icons
+scripts/create-icons.mjs        Generates PNG and ICO icons from the original SVG mark
 ```
 
 ## Known beta limitations
