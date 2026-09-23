@@ -1,0 +1,22 @@
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { AppData, ChatMessage, Conversation, Goal, Profile, Settings } from './model';
+const url=import.meta.env.VITE_SUPABASE_URL?.trim();
+const key=import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
+export const cloudConfigured=Boolean(url&&key);
+let client:SupabaseClient|null=null;
+function db(){if(!cloudConfigured)throw new Error('Cloud is not configured. See README.md.');if(!client)client=createClient(url!,key!,{auth:{persistSession:true,autoRefreshToken:true}});return client;}
+export async function connectCloud(){const api=db();const {data:{session}}=await api.auth.getSession();if(!session){const {error}=await api.auth.signInAnonymously();if(error)throw new Error(error.message+'. Enable anonymous sign-ins in Supabase Auth.');}return api;}
+export async function loadCloud(local:AppData):Promise<AppData>{const api=await connectCloud();const [p,g,c,m]=await Promise.all([api.from('profiles').select('*').maybeSingle(),api.from('goals').select('id,title,done,created_at').order('created_at',{ascending:true}),api.from('conversations').select('id,title,created_at').order('created_at',{ascending:false}).limit(100),api.from('messages').select('id,conversation_id,role,content,source,created_at').order('created_at',{ascending:true}).limit(500)]);
+for(const r of [p,g,c,m])if(r.error)throw r.error;
+const remote=p.data as Record<string,unknown>|null;
+const profile:Profile=remote?{name:String(remote.name||''),occupation:String(remote.occupation||''),about:String(remote.about||''),timezone:String(remote.timezone||local.profile.timezone),onboarded:Boolean(remote.onboarded)}:local.profile;
+const settings:Settings=remote?{proactive:Boolean(remote.proactive),notifications:Boolean(remote.notifications),frequency:remote.frequency as Settings['frequency'],quietHours:Boolean(remote.quiet_hours),quietStart:String(remote.quiet_start||'23:00'),quietEnd:String(remote.quiet_end||'08:00'),launchAtStartup:local.settings.launchAtStartup}:local.settings;
+const conversations=(c.data||[]) as Conversation[];
+return {...local,profile,settings,goals:(g.data||[]) as Goal[],conversations,messages:(m.data||[]) as ChatMessage[],activeConversationId:conversations.some(x=>x.id===local.activeConversationId)?local.activeConversationId:conversations[0]?.id||null};}
+export async function syncProfile(p:Profile,s:Settings){const api=await connectCloud();const {data:{user}}=await api.auth.getUser();if(!user)throw new Error('Not signed in');const {error}=await api.from('profiles').upsert({id:user.id,name:p.name,occupation:p.occupation,about:p.about,timezone:p.timezone,onboarded:p.onboarded,proactive:s.proactive,notifications:s.notifications,frequency:s.frequency,quiet_hours:s.quietHours,quiet_start:s.quietStart,quiet_end:s.quietEnd});if(error)throw error;}
+export async function saveGoal(goal:Goal){const api=await connectCloud();const {data:{user}}=await api.auth.getUser();if(!user)throw new Error('Not signed in');const {error}=await api.from('goals').upsert({...goal,user_id:user.id});if(error)throw error;}
+export async function removeGoal(id:string){const {error}=await (await connectCloud()).from('goals').delete().eq('id',id);if(error)throw error;}
+export async function saveConversation(c:Conversation){const api=await connectCloud();const {data:{user}}=await api.auth.getUser();if(!user)throw new Error('Not signed in');const {error}=await api.from('conversations').upsert({...c,user_id:user.id});if(error)throw error;}
+export async function requestChat(conversationId:string,message:string,clientMessageId:string):Promise<ChatMessage>{const {data,error}=await (await connectCloud()).functions.invoke('companion',{body:{action:'chat',conversationId,message,clientMessageId}});if(error)throw new Error(error.message);if(data?.error)throw new Error(data.error);if(!data?.message)throw new Error('No reply returned');return data.message as ChatMessage;}
+export async function requestCheckin():Promise<ChatMessage|null>{const {data,error}=await (await connectCloud()).functions.invoke('companion',{body:{action:'checkin'}});if(error)throw new Error(error.message);if(data?.error)throw new Error(data.error);return data?.message||null;}
+export async function getCloudMessages():Promise<ChatMessage[]>{const {data,error}=await (await connectCloud()).from('messages').select('id,conversation_id,role,content,source,created_at').order('created_at',{ascending:false}).limit(100);if(error)throw error;return (data||[]).reverse() as ChatMessage[];}
