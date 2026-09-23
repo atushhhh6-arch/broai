@@ -19,7 +19,7 @@ jobs:
       - run: npm run icons
       - run: test -f build/icon.png && test -f build/icon.ico
   installers:
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     needs: verify
     strategy:
       fail-fast: false
