@@ -1,0 +1,10 @@
+import sharp from 'sharp';
+import pngToIco from 'png-to-ico';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+const source = await readFile(new URL('../src/assets/bro-mascot.svg', import.meta.url));
+await mkdir(new URL('../build/', import.meta.url), {recursive:true});
+const png=await sharp(source).resize(512,512).png().toBuffer();
+await writeFile(new URL('../build/icon.png',import.meta.url),png);
+const icoPng=await sharp(source).resize(256,256).png().toBuffer();
+await writeFile(new URL('../build/icon.ico',import.meta.url),await pngToIco(icoPng));
+console.log('Generated BRO icons.');
